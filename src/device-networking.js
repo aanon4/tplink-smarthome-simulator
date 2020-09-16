@@ -117,7 +117,7 @@ class DeviceNetworking extends EventEmitter {
     }
 
     if (response !== undefined) {
-      socket._msg_pending += 1;
+      socket.outgoing_msg_pending += 1;
       setTimeout(() => {
         logTcp(
           '[%s] TCP responding, delay:%s,',
@@ -136,10 +136,10 @@ class DeviceNetworking extends EventEmitter {
           remotePort: socket.remotePort,
         });
         socket.write(response);
-        socket._msg_pending -= 1;
+        socket.outgoing_msg_pending -= 1;
         if (
           this.device.endSocketAfterResponse ||
-          (socket._msg_pending === 0 && socket._closed)
+          (socket.outgoing_msg_pending === 0 && socket.pending_close)
         ) {
           socket.end();
         }
@@ -153,7 +153,7 @@ class DeviceNetworking extends EventEmitter {
         let udpAddress;
         let retryCount = 0;
         this.server = net.createServer({ allowHalfOpen: true }, (socket) => {
-          socket._msg_pending = 0;
+          socket.outgoing_msg_pending = 0;
           socket.on('data', (chunk) => {
             this.processTcpMessage(chunk, socket);
           });
@@ -161,8 +161,8 @@ class DeviceNetworking extends EventEmitter {
             this.emit('error', err);
           });
           socket.on('end', () => {
-            socket._closed = true;
-            if (socket._msg_pending === 0) {
+            socket.pending_close = true;
+            if (socket.outgoing_msg_pending === 0) {
               socket.end();
             }
           });
