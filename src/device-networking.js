@@ -122,10 +122,11 @@ class DeviceNetworking extends EventEmitter {
       this.pending += 1;
       setTimeout(() => {
         logTcp(
-          '[%s] TCP responding, delay:%s,',
+          '[%s] TCP responding, delay:%s, %s:%d',
           this.model,
           this.responseDelay,
-          socket.address()
+          socket.localAddress,
+          socket.localPort
         );
         logTcp(responseForLog);
         this.emit('response', {
