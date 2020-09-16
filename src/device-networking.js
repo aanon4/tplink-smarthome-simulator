@@ -84,7 +84,7 @@ class DeviceNetworking extends EventEmitter {
     }
   }
 
-  processTcpMessage(msg, socket) {
+  processTcpMessage(msg, socket, state) {
     logTcp(
       '[%s] TCP DATA',
       this.model,
@@ -117,7 +117,7 @@ class DeviceNetworking extends EventEmitter {
     }
 
     if (response !== undefined) {
-      socket.outgoing_msg_pending += 1;
+      state.pending += 1;
       setTimeout(() => {
         logTcp(
           '[%s] TCP responding, delay:%s,',
@@ -136,10 +136,10 @@ class DeviceNetworking extends EventEmitter {
           remotePort: socket.remotePort,
         });
         socket.write(response);
-        socket.outgoing_msg_pending -= 1;
+        state.pending -= 1;
         if (
           this.device.endSocketAfterResponse ||
-          (socket.outgoing_msg_pending === 0 && socket.pending_close)
+          (state.pending === 0 && state.closed)
         ) {
           socket.end();
         }
@@ -153,16 +153,19 @@ class DeviceNetworking extends EventEmitter {
         let udpAddress;
         let retryCount = 0;
         this.server = net.createServer({ allowHalfOpen: true }, (socket) => {
-          socket.outgoing_msg_pending = 0;
+          const state = {
+            pending: 0,
+            closed: false
+          };
           socket.on('data', (chunk) => {
-            this.processTcpMessage(chunk, socket);
+            this.processTcpMessage(chunk, socket, state);
           });
           socket.on('error', (err) => {
             this.emit('error', err);
           });
           socket.on('end', () => {
-            socket.pending_close = true;
-            if (socket.outgoing_msg_pending === 0) {
+            state.closed = true;
+            if (state.pending === 0) {
               socket.end();
             }
           });
