@@ -155,10 +155,10 @@ class DeviceNetworking extends EventEmitter {
         this.server = net.createServer({ allowHalfOpen: true }, (socket) => {
           Object.assign(socket, {
             msg_pending: 0,
-            close_pending: false
+            close_pending: false,
           });
           socket.on('data', (chunk) => {
-            this.processTcpMessage(chunk, socket, state);
+            this.processTcpMessage(chunk, socket);
           });
           socket.on('error', (err) => {
             this.emit('error', err);
